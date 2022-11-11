@@ -8,6 +8,7 @@ python -m pip install -r requirements.txt
 ```
 
 ## Image Generation Experiments
+Dataset: https://www.vicos.si/resources/kolektorsdd2/
 ```
 python -m flows4manufacturing.image_generation.generation \
     --data ../path/to/KolektorSDD2/train \
@@ -17,7 +18,8 @@ python -m flows4manufacturing.image_generation.generation \
     --save-ae autoencoder.pt
 ```
 
-## Parameter Estimation Experiments
+## Milling Parameter Estimation Experiments
+Dataset: "3. Milling" from https://www.nasa.gov/content/prognostics-center-of-excellence-data-set-repository
 ```
 python -m flows4manufacturing.parameter_estimation.estimate \
     --epochs 1000 \
