@@ -1,0 +1,5 @@
+.neptune/
+__pycache__/
+*.jpg
+*.pt
+.vscode/
