@@ -140,7 +140,7 @@ class Experiment(TrackedModule):
             self.post_training_epoch(epoch)
 
             if valloader is not None:
-                for i, batch in enumerate(trainloader):
+                for i, batch in enumerate(valloader):
                     self.validation_step(batch, i)
                 self.post_validation_epoch(epoch)
 
