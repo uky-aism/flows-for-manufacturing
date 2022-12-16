@@ -4,7 +4,9 @@ This code is for the MSEC 2023 paper "Normalizing Flows for Intelligent Manufact
 
 ## Setup
 ```
-python -m pip install -r requirements.txt
+git clone https://github.com/uky-aism/flows-for-manufacturing.git
+python -m pip install -U pip
+python -m pip install -e ./flows-for-manufacturing
 ```
 
 ## Image Generation Experiments
