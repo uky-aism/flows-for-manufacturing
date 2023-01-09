@@ -107,6 +107,7 @@ class Experiment(TrackedModule):
         max_batches: Optional[int] = None,
         scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
         use_amp: Optional[bool] = None,
+        grad_acc_batches: int = 1,
     ):
         self._logger = logger
         self._trainloader = trainloader
@@ -140,8 +141,9 @@ class Experiment(TrackedModule):
                         torch.nn.utils.clip_grad.clip_grad_norm_(
                             self.parameters(), clip_grad_norm
                         )
-                    scaler.step(optimizer)
-                    scaler.update()
+                    if (i + 1) % grad_acc_batches == 0:
+                        scaler.step(optimizer)
+                        scaler.update()
                 else:
                     loss = self.training_step(batch, i)
                     loss.backward()
@@ -149,7 +151,8 @@ class Experiment(TrackedModule):
                         torch.nn.utils.clip_grad.clip_grad_norm_(
                             self.parameters(), clip_grad_norm
                         )
-                    optimizer.step()
+                    if (i + 1) % grad_acc_batches == 0:
+                        optimizer.step()
 
             if scheduler is not None:
                 scheduler.step()
