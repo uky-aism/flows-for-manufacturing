@@ -251,6 +251,20 @@ def main(
         use_amp=use_amp,
     )
 
+    # Calculate final validation scores
+    scores = []
+    labels = []
+    for batch in valloader:
+        inputs = batch["inputs"].to(DEVICE)
+        conditions = batch["condition"]
+        out = model(inputs)
+        scores.append(exp._get_logits(out))
+        labels += conditions
+    scores = torch.cat(scores)
+    filename = f"scores_deepsvdd_{seed:04d}.pt"
+    torch.save({"labels": labels, "scores": scores.detach().cpu()}, filename)
+    exp_logger.upload("scores", filename)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

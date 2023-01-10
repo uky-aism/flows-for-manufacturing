@@ -255,7 +255,6 @@ def main(
     num_blocks: int,
     hidden: int,
     single_condition: Optional[bool],
-    out: str,
     seed: int,
     pthresh: float,
     use_cnn: Optional[bool],
@@ -279,7 +278,6 @@ def main(
     logger.debug(f"    epochs: {epochs}")
     logger.debug(f"num_blocks: {num_blocks}")
     logger.debug(f"    hidden: {hidden}")
-    logger.debug(f"       out: {out}")
     logger.debug(f"   pthresh: {pthresh}")
     logger.debug(f"   use_cnn: {use_cnn}")
     logger.debug(f"   use_amp: {use_amp}")
@@ -328,7 +326,20 @@ def main(
         use_amp=use_amp if use_amp is not None else False,
     )
 
-    torch.save(flow.state_dict(), out)
+    # Calculate final validation scores
+    scores = []
+    labels = []
+    for batch in valloader:
+        inputs = batch["inputs"].to(DEVICE)
+        conditions = batch["condition"]
+        with torch.no_grad():
+            out = flow.forward(inputs)
+        scores.append(exp._anomaly_score(out))
+        labels += conditions
+    scores = torch.cat(scores)
+    filename = f"scores_flow_{seed:04d}.pt"
+    torch.save({"labels": labels, "scores": scores.detach().cpu()}, filename)
+    exp_logger.upload("scores", filename)
 
 
 if __name__ == "__main__":
@@ -360,9 +371,6 @@ if __name__ == "__main__":
         action="store_true",
         help="train on a single normal condition instead of all process parameters",
     )
-    parser.add_argument(
-        "--out", "-o", type=str, help="path to output checkpoint", required=True
-    )
     parser.add_argument("--seed", type=int, help="random seed", default=0)
     parser.add_argument("--pval", "-p", type=float, help="p-value for anomaly test")
     parser.add_argument(
@@ -380,7 +388,6 @@ if __name__ == "__main__":
         args.blocks,
         args.hidden,
         args.single_condition,
-        args.out,
         args.seed,
         args.pval,
         args.cnn,
