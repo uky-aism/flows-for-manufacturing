@@ -2,7 +2,7 @@ import argparse
 from .data import load_motor_data, make_train_val_test_sets
 import torch.nn as nn
 import torch
-from typing import Sequence, Optional, Any, Dict
+from typing import Sequence, Optional, Any
 from ..common.experiment import Experiment
 from ..common.logger import SafeLogger
 from torch.utils.data import DataLoader

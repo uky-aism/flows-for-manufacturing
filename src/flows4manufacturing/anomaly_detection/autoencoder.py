@@ -1,14 +1,16 @@
 import argparse
-from .data import load_motor_data, make_train_val_test_sets
-import torch.nn as nn
+from typing import Any, Optional, Tuple
+
+import numpy as np
 import torch
-from typing import Tuple, Optional, Any, Dict
+import torch.nn as nn
+import torchmetrics
+from torch.utils.data import DataLoader
+
 from ..common.experiment import Experiment
 from ..common.logger import SafeLogger
-from torch.utils.data import DataLoader
-import torchmetrics
-import numpy as np
 from .augmentations import random_jitter
+from .data import load_motor_data, make_train_val_test_sets
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 WINDOW_LEN = 256
@@ -250,7 +252,7 @@ def main(
     exp_logger.set("args/single_condition", single_condition)
     exp_logger.set("args/seed", seed)
     exp_logger.set("args/use_amp", use_amp)
-    
+
     dataset = load_motor_data(data, WINDOW_LEN, channels=CHANNELS)
     trainset, valset, _ = make_train_val_test_sets(dataset, single_condition, seed)
     trainloader = DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True)  # type: ignore

@@ -16,7 +16,7 @@ from typing_extensions import Protocol
 from ..common.experiment import Experiment
 from ..common.flows import NormalizingFlow
 from ..common.logger import SafeLogger
-from .augmentations import random_jitter, random_jitter_freq
+from .augmentations import random_jitter
 from .data import load_motor_data, make_train_val_test_sets
 from .model import make_flow
 from .plots import plot_rms_hist
