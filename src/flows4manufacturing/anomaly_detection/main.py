@@ -219,16 +219,16 @@ class AnomalyDetection(Experiment):
         self._val_normal_acc.reset()
 
         for k, acc in self._val_fault_accs.items():
-            self.logger.log(f"val/acc_{k}", acc.compute())
-            acc.reset()
+            self.logger.log(f"val/acc_{k}", acc.compute())  # type: ignore
+            acc.reset()  # type: ignore
 
         for k, metric in self._val_fault_pvals.items():
-            self.logger.log(f"val/p_{k}", metric.compute())
-            metric.reset()
+            self.logger.log(f"val/p_{k}", metric.compute())  # type: ignore
+            metric.reset()  # type: ignore
 
         for k, metric in self._val_fault_scores.items():
-            self.logger.log(f"val/score_{k}", metric.compute())
-            metric.reset()
+            self.logger.log(f"val/score_{k}", metric.compute())  # type: ignore
+            metric.reset()  # type: ignore
 
 
 def get_model_mem(model: nn.Module) -> int:
@@ -262,6 +262,17 @@ def main(
     use_amp: Optional[bool],
 ):
     exp_logger = SafeLogger(project)
+    exp_logger.set("method", "flow")
+    exp_logger.set("args/epochs", epochs)
+    exp_logger.set("args/lr", lr)
+    exp_logger.set("args/hidden", hidden)
+    exp_logger.set("args/single_condition", single_condition)
+    exp_logger.set("args/seed", seed)
+    exp_logger.set("args/use_amp", use_amp)
+    exp_logger.set("args/num_blocks", num_blocks)
+    exp_logger.set("args/pthresh", pthresh)
+    exp_logger.set("args/use_cnn", use_cnn)
+
     logger.info(f"    DEVICE: {DEVICE}")
     logger.debug(f"      data: {data}")
     logger.debug(f"        lr: {lr}")
@@ -305,7 +316,7 @@ def main(
     mem = get_model_mem(flow)
     logger.debug(f"Model Memory: {mem / 1024 / 1024:0.1f} MB")
     optim = torch.optim.Adam(flow.parameters(), lr=lr)
-    exp = AnomalyDetection(flow, pthresh, [random_jitter_freq, random_jitter])
+    exp = AnomalyDetection(flow, pthresh, [random_jitter])
     exp.to(DEVICE)
 
     exp.fit(
