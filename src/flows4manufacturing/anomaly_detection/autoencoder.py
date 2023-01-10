@@ -254,9 +254,10 @@ def main(
     exp_logger.set("args/use_amp", use_amp)
 
     dataset = load_motor_data(data, WINDOW_LEN, channels=CHANNELS)
-    trainset, valset, _ = make_train_val_test_sets(dataset, single_condition, seed)
+    trainset, valset, testset = make_train_val_test_sets(dataset, single_condition, seed)
     trainloader = DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True)  # type: ignore
     valloader = DataLoader(valset, batch_size=BATCH_SIZE)  # type: ignore
+    testloader = DataLoader(testset, batch_size=BATCH_SIZE) # type: ignore
 
     torch.manual_seed(seed)
     model = AutoEncoder1D((len(CHANNELS), WINDOW_LEN), hidden)
@@ -274,10 +275,10 @@ def main(
         use_amp=use_amp,
     )
 
-    # Calculate final validation scores
+    # Calculate final test scores
     scores = []
     labels = []
-    for batch in valloader:
+    for batch in testloader:
         inputs = batch["inputs"].to(DEVICE)
         conditions = batch["condition"]
         out, _ = model(inputs)

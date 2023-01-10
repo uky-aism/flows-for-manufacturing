@@ -285,8 +285,8 @@ def main(
         logger.info("Training on a single normal condition")
 
     dataset = load_motor_data(data, WINDOW_LEN, channels=CHANNELS)
-    trainset, valset, _ = make_train_val_test_sets(dataset, single_condition, seed)
-
+    trainset, valset, testset = make_train_val_test_sets(dataset, single_condition, seed)
+    
     # Apply the RMS metric for reference
     all_train = torch.cat([x["inputs"] for x in trainset])
     all_val_normal = torch.cat([x["inputs"] for x in valset if not x["anomaly"]])
@@ -303,6 +303,7 @@ def main(
     # Create the loaders
     trainloader = DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True)  # type: ignore
     valloader = DataLoader(valset, batch_size=BATCH_SIZE)  # type: ignore
+    testloader = DataLoader(testset, batch_size=BATCH_SIZE) # type: ignore
 
     torch.manual_seed(seed)
     flow = make_flow(
@@ -326,10 +327,10 @@ def main(
         use_amp=use_amp if use_amp is not None else False,
     )
 
-    # Calculate final validation scores
+    # Calculate final test scores
     scores = []
     labels = []
-    for batch in valloader:
+    for batch in testloader:
         inputs = batch["inputs"].to(DEVICE)
         conditions = batch["condition"]
         with torch.no_grad():
