@@ -285,25 +285,12 @@ def main(
         logger.info("Training on a single normal condition")
 
     dataset = load_motor_data(data, WINDOW_LEN, channels=CHANNELS)
-    trainset, valset, testset = make_train_val_test_sets(dataset, single_condition, seed)
-    
-    # Apply the RMS metric for reference
-    all_train = torch.cat([x["inputs"] for x in trainset])
-    all_val_normal = torch.cat([x["inputs"] for x in valset if not x["anomaly"]])
-    all_val_faulty = torch.cat([x["inputs"] for x in valset if x["anomaly"]])
-    train_rms = root_mean_square_metric(all_train)
-    val_normal_rms = root_mean_square_metric(all_val_normal)
-    val_faulty_rms = root_mean_square_metric(all_val_faulty)
-    hist_fig = plot_rms_hist(train_rms, val_normal_rms, val_faulty_rms)
-    exp_logger.set("rms/train", train_rms.mean())
-    exp_logger.set("rms/val_normal", val_normal_rms.mean())
-    exp_logger.set("rms/val_faulty", val_faulty_rms.mean())
-    exp_logger.log("rms/hist", hist_fig)
+    trainset, valset, testset = make_train_val_test_sets(dataset, single_condition, 42)
 
     # Create the loaders
     trainloader = DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True)  # type: ignore
     valloader = DataLoader(valset, batch_size=BATCH_SIZE)  # type: ignore
-    testloader = DataLoader(testset, batch_size=BATCH_SIZE) # type: ignore
+    testloader = DataLoader(testset, batch_size=BATCH_SIZE)  # type: ignore
 
     torch.manual_seed(seed)
     flow = make_flow(

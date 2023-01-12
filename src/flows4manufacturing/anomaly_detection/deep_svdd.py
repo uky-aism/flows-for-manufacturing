@@ -227,12 +227,12 @@ def main(
     exp_logger.set("args/single_condition", single_condition)
     exp_logger.set("args/seed", seed)
     exp_logger.set("args/use_amp", use_amp)
-    
+
     dataset = load_motor_data(data, WINDOW_LEN, channels=CHANNELS)
-    trainset, valset, testset = make_train_val_test_sets(dataset, single_condition, seed)
+    trainset, valset, testset = make_train_val_test_sets(dataset, single_condition, 42)
     trainloader = DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True)  # type: ignore
     valloader = DataLoader(valset, batch_size=BATCH_SIZE)  # type: ignore
-    testloader = DataLoader(testset, batch_size=BATCH_SIZE) # type: ignore
+    testloader = DataLoader(testset, batch_size=BATCH_SIZE)  # type: ignore
 
     torch.manual_seed(seed)
     model = ConvNet((len(CHANNELS), WINDOW_LEN), hidden)

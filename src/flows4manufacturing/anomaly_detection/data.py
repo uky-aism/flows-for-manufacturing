@@ -19,9 +19,7 @@ CLASS_ORDER = [
 
 
 def load_motor_data(
-    dir: str,
-    window_length: int = 256,
-    channels: Optional[Sequence[int]] = None
+    dir: str, window_length: int = 256, channels: Optional[Sequence[int]] = None
 ) -> List[Dict[str, Any]]:
     """Load the motor data.
 
@@ -67,7 +65,10 @@ def load_motor_data(
 
 
 def make_train_val_test_sets(
-    dataset: Sequence[Dict[str, Any]], single_condition: Optional[bool], seed: int
+    dataset: Sequence[Dict[str, Any]],
+    single_condition: Optional[bool],
+    seed: int,
+    consecutive_windows: int = 1,
 ) -> Tuple[
     Sequence[Dict[str, Any]], Sequence[Dict[str, Any]], Sequence[Dict[str, Any]]
 ]:
@@ -77,14 +78,26 @@ def make_train_val_test_sets(
         dataset: The sequence of all examples in the data set.
         single_condition: If True, only use data from 33.3 Hz Load 3 for training.
         seed: The random seed.
+        consecutive_windows: The number of windows to keep together (not shuffle)
 
     Returns:
         A tuple of the train, val, and test sequences.
     """
     random.seed(seed)
-    dataset = random.sample(dataset, len(dataset))
-    train_idx = int(0.8 * len(dataset))
-    val_idx = int(0.9 * len(dataset))
+    # Group the consecutive windows
+    grouped = [
+        dataset[i : i + consecutive_windows]
+        for i in range(0, len(dataset), consecutive_windows)
+    ]
+    # Drop all groups with mixed conditions
+    grouped = [g for g in grouped if len(set([x["condition"] for x in g])) == 1]
+    # Sample the groups
+    grouped = random.sample(grouped, len(grouped))
+    # Flatten the groups
+    dataset = [x for group in grouped for x in group]
+    # Split according to window group size
+    train_idx = int(0.8 * len(grouped)) * consecutive_windows
+    val_idx = int(0.9 * len(grouped)) * consecutive_windows
     dataset = [{**x, "anomaly": x["condition"] != "normal"} for x in dataset]
     trainset = dataset[:train_idx]
     trainset = [x for x in trainset if not x["anomaly"]]
