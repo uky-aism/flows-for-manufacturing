@@ -80,8 +80,10 @@ class DeepSVDDExperiment(Experiment):
             The deep SVDD loss.
         """
         return (
-            self._r.abs()
-            + torch.clamp(((feat - self._c) ** 2).sum(-1) - self._r, min=0).mean()
+            self._r.pow(2)
+            + torch.clamp(
+                ((feat - self._c) ** 2).sum(-1) - self._r.pow(2), min=0
+            ).mean()
             / self._nu
         )
 
@@ -94,7 +96,7 @@ class DeepSVDDExperiment(Experiment):
         Returns:
             The logits of the one-class anomaly predictions.
         """
-        return ((feat - self._c) ** 2).sum(-1) - self._r
+        return ((feat - self._c) ** 2).sum(-1) - self._r.pow(2)
 
     def training_step(self, batch: Any, batch_index: int) -> torch.Tensor:
         inputs = batch["inputs"].to(self.device)
@@ -127,25 +129,12 @@ class DeepSVDDExperiment(Experiment):
         self.logger.log("train/acc", self._train_acc.compute())
         self._train_acc.reset()
 
-        if epoch % 20 == 19:
+        if epoch >= 49:
             # Optimize the R
-            self._r.requires_grad = True
-            optim = torch.optim.LBFGS(
-                [self._r], max_iter=20, history_size=100, line_search_fn="strong_wolfe"
-            )
+            # https://github.com/lukasruff/Deep-SVDD-PyTorch/blob/master/src/optim/deepSVDD_trainer.py
             all_feats = torch.cat(features)
-
-            def closure():
-                optim.zero_grad()
-                loss = self.deep_svdd_loss(all_feats)
-                self.logger.log("train/line_loss", loss)
-                loss.backward()
-                return loss
-
-            for _ in range(20):
-                optim.step(closure)  # type: ignore
-
-            self._r.requires_grad = False
+            scores = ((all_feats - self._c) ** 2).sum(-1).sqrt()
+            self._r.data.copy_(torch.quantile(scores, 1 - self._nu))
 
     def validation_step(self, batch: Any, batch_index: int):
         inputs = batch["inputs"].to(self.device)
@@ -238,7 +227,7 @@ def main(
     model = ConvNet((len(CHANNELS), WINDOW_LEN), hidden)
     features = []
     for batch in trainloader:
-        features.append(model(batch["inputs"]))
+        features.append(model(batch["inputs"]).detach())
     mean_feature = torch.cat(features, dim=0).mean(dim=0)
     exp = DeepSVDDExperiment(0.01, mean_feature, model)
     exp.to(DEVICE)
