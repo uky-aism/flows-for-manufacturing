@@ -7,6 +7,7 @@ from .logger import GenericLogger
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from typing_extensions import Protocol, Self
+import torch.cuda.amp
 
 
 class NoLogger(RuntimeError):
@@ -105,6 +106,8 @@ class Experiment(TrackedModule):
         clip_grad_norm: Optional[float] = None,
         max_batches: Optional[int] = None,
         scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
+        use_amp: Optional[bool] = None,
+        grad_acc_batches: int = 1,
     ):
         self._logger = logger
         self._trainloader = trainloader
@@ -118,6 +121,10 @@ class Experiment(TrackedModule):
         }
         logger.set("hparams", hparams)
 
+        scaler = None
+        if use_amp:
+            scaler = torch.cuda.amp.GradScaler()
+
         for epoch in range(epochs):
             pbar = tqdm(trainloader, total=max_batches)
             pbar.set_description_str(f"Epoch {epoch}")
@@ -125,14 +132,27 @@ class Experiment(TrackedModule):
                 if max_batches is not None and i == max_batches:
                     break
 
-                loss = self.training_step(batch, i)
                 optimizer.zero_grad()
-                loss.backward()
-                if clip_grad_norm is not None:
-                    torch.nn.utils.clip_grad.clip_grad_norm_(
-                        self.parameters(), clip_grad_norm
-                    )
-                optimizer.step()
+                if scaler:
+                    with torch.cuda.amp.autocast():
+                        loss = self.training_step(batch, i)
+                    scaler.scale(loss).backward()
+                    if clip_grad_norm is not None:
+                        torch.nn.utils.clip_grad.clip_grad_norm_(
+                            self.parameters(), clip_grad_norm
+                        )
+                    if (i + 1) % grad_acc_batches == 0:
+                        scaler.step(optimizer)
+                        scaler.update()
+                else:
+                    loss = self.training_step(batch, i)
+                    loss.backward()
+                    if clip_grad_norm is not None:
+                        torch.nn.utils.clip_grad.clip_grad_norm_(
+                            self.parameters(), clip_grad_norm
+                        )
+                    if (i + 1) % grad_acc_batches == 0:
+                        optimizer.step()
 
             if scheduler is not None:
                 scheduler.step()
@@ -140,7 +160,7 @@ class Experiment(TrackedModule):
             self.post_training_epoch(epoch)
 
             if valloader is not None:
-                for i, batch in enumerate(trainloader):
+                for i, batch in enumerate(valloader):
                     self.validation_step(batch, i)
                 self.post_validation_epoch(epoch)
 

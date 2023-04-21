@@ -143,18 +143,27 @@ class AffineCouplingBlock(Bijector):
     """An affine coupling block in the style of Real NVP."""
 
     def __init__(
-        self, param_fn: Callable[[FlowItem], AffineParams], mask: torch.Tensor
+        self,
+        param_fn: Callable[[FlowItem], AffineParams],
+        mask: torch.Tensor,
+        init_log_scale_fac: float = 0.0,
     ):
         """
         Args:
             param_fn: A callable function or module that maps the flow item
                 to the scale and shift params.
             mask: The mask. True values are those given to the param_fn.
+            init_log_scale_fac: The initial value of the scaling parameter.
+                Defaults to 0.0 (no change in scaling).
+                For deep flows with mixed-precision training,
+                you may need to set the value to below zero
+                to ensure the initial passes through the flow
+                do not produce nan or inf outputs.
         """
         super().__init__()
         self._param_fn = param_fn
         self._mask = Parameter(mask.to(torch.float).unsqueeze(0), requires_grad=False)
-        self._scale = Parameter(torch.tensor([0.0]))
+        self._scale = Parameter(torch.tensor([init_log_scale_fac]), requires_grad=True)
 
     def map_forward(self, x: FlowItem) -> FlowItem:
         masked_item = FlowItem(x.x * self._mask, x.logdetj, x.context)
@@ -251,7 +260,13 @@ class NormalizingFlow(nn.Module):
             if logprob:
                 return self.log_prob(x, context)
             else:
-                return self.log_prob_with_latent(x, context)[1]
+                posterior_item = FlowItem(x, context=context)
+                base_item = self._norm_fn.map_forward(posterior_item)
+                batch_dim = x.shape[0]
+                latents = [
+                    item.reshape(batch_dim, -1) for item in base_item.latents
+                ] + [base_item.x.reshape(batch_dim, -1)]
+                return torch.cat(latents, dim=-1).reshape(-1, *self._shape)
 
         assert sample is not None
         # Must be sampling

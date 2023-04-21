@@ -38,15 +38,33 @@ python -m flows4manufacturing.parameter_estimation.estimate \
     --out bayesflow00.pt
 ```
 
-## Citation
-If you find this code helpful in your reesearch, please cite it.
-This citation will be updated to reflect the conference publication
-once the proceedings are published.
+## Motor Anomaly Detection Experiments
+
+> Data not available publicly at this time
+
 ```
-@misc{russell2022,
-    author = {Matthew Russell},
-    title  = {Flows for Manufacturing},
-    year   = {2022},
+python -m flows4manufacturing.anomaly_detection.main \
+    --epochs 5000   \
+    --hidden 256    \
+    --lr 1e-5       \
+    --blocks 16     \
+    --seed 0        \
+    --amp
+```
+
+Autoencoder and Deep SVDD experiments can be run using
+`flows4manufacturing.anomaly_detection.autoencoder`
+and `flows4manufacturing.anomaly_detection.deep_svdd`,
+respectively.
+
+## Citation
+If you find this code helpful in your research, please cite it.
+This citation will be updated to reflect the conference/journal publication when available.
+```
+@misc{russell2023,
+    author = {Matthew Russell and Peng Wang},
+    title  = {Normalizing Flows for Intelligent Manufacturing},
+    year   = {2023},
     url    = {https://github.com/uky-aism/flows-for-manufacturing} 
 }
 ```
