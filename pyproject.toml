@@ -17,6 +17,7 @@ dependencies = [
     "matplotlib",
     "neptune-client",
     "numpy",
+    "pyro-ppl",
     "scikit-learn",
     "scipy",
     "torch",
