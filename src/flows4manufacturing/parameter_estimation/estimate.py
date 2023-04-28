@@ -66,14 +66,14 @@ class ParamNet(nn.Module):
         return AffineParams(out[:, :middle], out[:, middle:])
 
 
-def load_milling_data(file_path: str) -> Sequence[torch.Tensor]:
+def load_milling_data(file_path: str) -> Sequence[np.ndarray]:
     """Loads the milling data.
 
     Args:
         file_path: The path to the milling .mat file
 
     Returns:
-        A list of torch tensors of the run data.
+        A list of numpy arrays of the run data.
     """
     data = loadmat(file_path)
     flank_wear = data["mill"]["VB"][0].astype(float)
